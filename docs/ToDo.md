@@ -22,8 +22,8 @@
 - [x] T-013: Copiar DDL de `03-datos.md` a `data/migrations/000_init.sql`
 - [x] T-014: Implementar `unifutsal init-db` (crea la BD desde el DDL)
 - [x] T-015: Implementar `unifutsal validate` (las 7 queries de QA)
-- [ ] T-016: Implementar `unifutsal import` (CSV básico de países)
-- [ ] T-017: Crear CSV de prueba `data/csv/countries.csv` con 5 países
+- [x] T-016: Implementar `unifutsal import` (CSV básico de países)
+- [x] T-017: Crear CSV de prueba `data/csv/countries.csv` con 5 países
 
 ### Criterio de salida de M0
 - [ ] `dotnet build` verde
