@@ -1,0 +1,29 @@
+﻿# Build outputs
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# Unity
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+
+# OS
+Thumbs.db
+.DS_Store
+
+# IDE
+.idea/
+*.swp
+
+# Saves del juego (no trackear en Git)
+saves/
