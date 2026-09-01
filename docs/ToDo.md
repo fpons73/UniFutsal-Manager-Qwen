@@ -10,13 +10,13 @@
 
 ### Estructura del proyecto
 - [x] T-005: Crear carpeta `unifutsal-manager/` e inicializar repo Git
-- [ ] T-006: Crear estructura de carpetas según Plan.md §4
-- [ ] T-007: Crear solución `UniFutsal.sln` con los 4 proyectos .NET
-- [ ] T-008: Configurar `UniFutsal.Core` como netstandard2.1
-- [ ] T-009: Configurar `UniFutsal.Engine` como netstandard2.1
-- [ ] T-010: Configurar `UniFutsal.Data` como netstandard2.1 + SQLite
-- [ ] T-011: Configurar `UniFutsal.Cli` como net8.0
-- [ ] T-012: Crear proyecto `UniFutsal.Tests` con xUnit
+- [x] T-006: Crear estructura de carpetas según Plan.md §4
+- [x] T-007: Crear solución `UniFutsal.sln` con los 4 proyectos .NET
+- [x] T-008: Configurar `UniFutsal.Core` como netstandard2.1
+- [x] T-009: Configurar `UniFutsal.Engine` como netstandard2.1
+- [x] T-010: Configurar `UniFutsal.Data` como netstandard2.1 + SQLite
+- [x] T-011: Configurar `UniFutsal.Cli` como net8.0
+- [x] T-012: Crear proyecto `UniFutsal.Tests` con xUnit
 
 ### Schema y datos
 - [ ] T-013: Copiar DDL de `03-datos.md` a `data/migrations/000_init.sql`
