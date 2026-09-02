@@ -55,8 +55,8 @@
 - [x] T-025: Cargar la liga y validar con `validate`
 
 ### Mundo en memoria
-- [ ] T-026: WorldLoader (carga la BD completa a objetos C#)
-- [ ] T-027: Tests de carga del mundo
+- [x] T-026: WorldLoader (carga la BD completa a objetos C#)
+- [x] T-027: Tests de carga del mundo
 
 ### Calendario y simulación
 - [ ] T-028: Generador de calendario round-robin (ida y vuelta)
