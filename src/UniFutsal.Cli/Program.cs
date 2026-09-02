@@ -368,6 +368,11 @@ namespace UniFutsal.Cli
                 Console.WriteLine($"   📋 Inscripciones copiadas: {result.EntriesCopied}");
                 Console.WriteLine($"   ⚽ Partidos generados:     {result.MatchesGenerated}");
                 Console.WriteLine($"   📆 Nueva fecha del mundo:  {result.NewWorldDate}");
+                Console.WriteLine();
+                Console.WriteLine($"👥 Desarrollo de jugadores ({result.PlayersDeveloped} totales):");
+                Console.WriteLine($"   📈 Mejorados:  {result.PlayersImproved}");
+                Console.WriteLine($"   ➡️  Estables:   {result.PlayersStable}");
+                Console.WriteLine($"   📉 Declinados: {result.PlayersDeclined}");
                 Console.WriteLine($"\n💡 Para simular la nueva temporada:");
                 Console.WriteLine($"   unifutsal sim --db {dbPath} --competition {competitionUid} --season {result.NewSeasonLabel} --report");
                 return 0;

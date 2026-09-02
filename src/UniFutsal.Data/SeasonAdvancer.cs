@@ -14,6 +14,10 @@ namespace UniFutsal.Data
         public int EntriesCopied { get; set; }
         public int MatchesGenerated { get; set; }
         public string NewWorldDate { get; set; } = string.Empty;
+        public int PlayersDeveloped { get; set; }
+        public int PlayersImproved { get; set; }
+        public int PlayersDeclined { get; set; }
+        public int PlayersStable { get; set; }
     }
 
     /// <summary>
@@ -95,13 +99,28 @@ namespace UniFutsal.Data
             string newWorldDate = nextStartDate.ToString("yyyy-MM-dd");
             UpdateWorldDate(connection, newWorldDate);
 
+            // 10. Desarrollo anual de jugadores (envejecimiento + mejora/declive)
+            var developer = new PlayerDeveloper(_dbPath);
+            var devRecords = developer.DevelopAll(nextLabel);
+            int improved = 0, declined = 0, stable = 0;
+            foreach (var r in devRecords)
+            {
+                if (r.Delta > 0) improved++;
+                else if (r.Delta < 0) declined++;
+                else stable++;
+            }
+
             return new SeasonAdvanceResult
             {
                 PreviousSeasonLabel = currentLabel,
                 NewSeasonLabel = nextLabel,
                 EntriesCopied = entriesCopied,
                 MatchesGenerated = matchesGenerated,
-                NewWorldDate = newWorldDate
+                NewWorldDate = newWorldDate,
+                PlayersDeveloped = devRecords.Count,
+                PlayersImproved = improved,
+                PlayersDeclined = declined,
+                PlayersStable = stable
             };
         }
 

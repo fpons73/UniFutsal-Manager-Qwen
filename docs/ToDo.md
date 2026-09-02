@@ -61,7 +61,7 @@
 ### Calendario y simulación
 - [x] T-028: Generador de calendario round-robin (ida y vuelta)
 - [x] T-029: IRng + Xoshiro256** (determinismo)
-- [ ] T-030: Simulador instantáneo (basado en fuerza de equipos)
+- [x] T-030: Simulador instantáneo (basado en fuerza de equipos)
 - [ ] T-031: Tests golden de determinismo
 
 ### Clasificación y temporada
