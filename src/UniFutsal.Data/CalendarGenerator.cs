@@ -23,7 +23,6 @@ namespace UniFutsal.Data
                 pragmaCmd.ExecuteNonQuery();
             }
 
-            // 1. Obtener IDs de temporada y competición
             long seasonId = GetSeasonId(connection, seasonLabel);
             long competitionId = GetCompetitionId(connection, competitionUid);
 
@@ -32,10 +31,7 @@ namespace UniFutsal.Data
                 throw new Exception($"Temporada '{seasonLabel}' o competición '{competitionUid}' no encontradas.");
             }
 
-            // 2. Obtener fecha de inicio de la temporada
             DateTime startDate = GetSeasonStartDate(connection, seasonId);
-
-            // 3. Obtener clubes inscritos
             List<long> clubIds = GetActiveClubIds(connection, seasonId, competitionId);
 
             if (clubIds.Count < 2)
@@ -43,10 +39,7 @@ namespace UniFutsal.Data
                 throw new Exception($"Se necesitan al menos 2 clubes para generar un calendario. Encontrados: {clubIds.Count}");
             }
 
-            // 4. Generar emparejamientos Round-Robin
             var matchdays = GenerateRoundRobin(clubIds);
-
-            // 5. Insertar partidos en la BD
             int totalMatches = 0;
             using var transaction = connection.BeginTransaction();
 
@@ -55,14 +48,12 @@ namespace UniFutsal.Data
                 for (int i = 0; i < matchdays.Count; i++)
                 {
                     int matchday = i + 1;
-                    DateTime matchDate = startDate.AddDays(i * 7); // 1 jornada por semana
+                    DateTime matchDate = startDate.AddDays(i * 7);
                     string playedOn = matchDate.ToString("yyyy-MM-dd");
                     string roundLabel = $"J{matchday}";
 
                     foreach (var (homeId, awayId) in matchdays[i])
                     {
-                        // Seed determinista basada en los IDs (garantiza que el mismo calendario
-                        // siempre genere los mismos resultados de motor de partido).
                         long rngSeed = (seasonId * 10000000) + (competitionId * 10000) + (matchday * 100) + homeId + awayId;
 
                         using var insertCmd = new SqliteCommand(
@@ -117,7 +108,7 @@ namespace UniFutsal.Data
             using var cmd = new SqliteCommand("SELECT start_date FROM seasons WHERE id = @id", connection);
             cmd.Parameters.AddWithValue("@id", seasonId);
             var result = cmd.ExecuteScalar();
-            return DateTime.Parse((string)result);
+            return DateTime.Parse((string)result!);
         }
 
         private List<long> GetActiveClubIds(SqliteConnection connection, long seasonId, long competitionId)
@@ -147,38 +138,32 @@ namespace UniFutsal.Data
             int n = teams.Count;
             var result = new List<List<(long, long)>>();
 
-            // Si es impar, añadimos un "bye" (equipo fantasma que descansa)
             List<long> rotatedTeams = new List<long>(teams);
             if (n % 2 != 0)
             {
-                rotatedTeams.Add(-1); // -1 representa el bye
+                rotatedTeams.Add(-1);
                 n++;
             }
 
             int numMatchdaysFirstHalf = n - 1;
             int halfSize = n / 2;
 
-            // El primer equipo se fija en su posición, el resto rota
             long fixedTeam = rotatedTeams[0];
             List<long> rotating = rotatedTeams.GetRange(1, n - 1);
 
-            // === PRIMERA VUELTA (IDA) ===
             for (int round = 0; round < numMatchdaysFirstHalf; round++)
             {
                 var matchday = new List<(long, long)>();
 
-                // Emparejar el equipo fijo con el primero de la lista rotante
                 long opponent = rotating[0];
                 if (fixedTeam != -1 && opponent != -1)
                 {
-                    // Alternar local/visitante para el equipo fijo
                     if (round % 2 == 0)
                         matchday.Add((fixedTeam, opponent));
                     else
                         matchday.Add((opponent, fixedTeam));
                 }
 
-                // Emparejar el resto simétricamente (el 2º con el último, el 3º con el penúltimo...)
                 for (int i = 1; i < halfSize; i++)
                 {
                     long team1 = rotating[i];
@@ -195,14 +180,12 @@ namespace UniFutsal.Data
 
                 result.Add(matchday);
 
-                // Rotar la lista: el último pasa al principio
-                long last = rotating[rotating.Count - 1];
+                // Rotar: último elemento al principio
+                long lastElement = rotating[rotating.Count - 1];
                 rotating.RemoveAt(rotating.Count - 1);
-                rotating.Insert(0, last);
+                rotating.Insert(0, lastElement);
             }
 
-            // === SEGUNDA VUELTA (VUELTA) ===
-            // Invertimos local y visitante de la primera vuelta
             int firstHalfCount = result.Count;
             for (int round = 0; round < firstHalfCount; round++)
             {

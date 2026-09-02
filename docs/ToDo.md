@@ -47,12 +47,12 @@
   - [x] T-023b: Importador de clubs (clubs.csv)
   - [x] T-023c: Importador de people (people.csv)
   - [x] T-023d: Importador de competitions (competitions.json)
-- [ ] T-024: Generar CSVs plausibles de una liga de prueba (8 clubes)
+- [x] T-024: Generar CSVs plausibles de una liga de prueba (8 clubes)
   - [x]-024a: Crear la clase World en Core
   - [x]-024b: Crear el WorldLoader en Data
-  - [] T-024c: Test de Carta
-  - [] T-024d: Comando CLI load-world para verificar
-- [ ] T-025: Cargar la liga y validar con `validate`
+  - [x]-024c: Test de Carta
+  - [x]-024d: Comando CLI load-world para verificar
+- [x] T-025: Cargar la liga y validar con `validate`
 
 ### Mundo en memoria
 - [ ] T-026: WorldLoader (carga la BD completa a objetos C#)
