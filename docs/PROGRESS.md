@@ -19,14 +19,14 @@
 
 ## 2026-09-02 — Hito M1 completado 🏆
 - Hecho: T-024 a T-029 + T-035 (orquestador + comando sim --report)
-- **Resultado:** Simulación completa de la LNFS 2026/27:
-  - 8 clubes, 96 jugadores, 56 partidos simulados headless.
-  - Campeón: [PONER AQUÍ EL CAMPEÓN DEL REPORTE]
-  - Goles/partido: [PONER AQUÍ] (objetivo LNFS: 5.5–6.5)
-  - Victorias local/visita/empate: [PONER AQUÍ %]
-- **Decisiones nuevas:**
-  - D-005: LeagueTable recibe goles crudos (evita referencia circular Core→Engine).
-  - D-006: Tests de SeasonSimulator usan SafeDelete (GC.Collect + try/catch IOException)
-    porque SQLite mantiene handles brevemente tras WorldLoader.
-- **Siguiente:** M2 — Mundo Vivo (10 temporadas headless, mercado IA, desarrollo, ascensos/descensos).
-
+- **Resultado de la simulación LNFS 2026/27:**
+  - Campeón: Sevilla FS (30 pts) · Subcampeón: Zaragoza FS (24 pts)
+  - Goles/partido: 7.20 (objetivo LNFS: 5.5–6.5, rango aceptable: 4.5–7.5) ✅
+  - Victorias local/visita/empate: 44.6% / 35.7% / 19.6% ✅ plausibles
+- **Observaciones de calibración v0 (deuda para M4):**
+  - Goles/partido en extremo alto del rango (7.20 vs objetivo 5.5-6.5).
+  - Diferenciación de fuerza débil: el favorito teórico (Madrid FS, CA 120)
+    quedó 4º. Causa: la fórmula comprime las diferencias de rating (~4%).
+    → Ver D-007 en DECISIONES.md.
+- **Decisiones nuevas:** D-005, D-006, D-007 (ver DECISIONES.md).
+- **Siguiente:** M2 — Mundo Vivo (10 temporadas, mercado IA, ascensos/descensos).

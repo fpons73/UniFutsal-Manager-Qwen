@@ -24,6 +24,7 @@ namespace UniFutsal.Cli
                 case "generate-calendar": return HandleGenerateCalendar(args);
                 case "load-world": return HandleLoadWorld(args);
                 case "sim": return HandleSim(args);
+                case "advance-season": return HandleAdvanceSeason(args);
                 default:
                     Console.WriteLine($"⚠️ Comando desconocido: '{command}'");
                     PrintHelp();
@@ -42,8 +43,9 @@ namespace UniFutsal.Cli
             Console.WriteLine("  generate-test-data --out <ruta>   Genera CSVs de prueba.");
             Console.WriteLine("  generate-calendar --db <ruta> --competition <uid> --season <label>");
             Console.WriteLine("  load-world --db <ruta>            Carga el mundo y muestra un resumen.");
-            Console.WriteLine("  sim --seasons N --db <ruta> --competition <uid> --report");
-            Console.WriteLine("      Simula N temporadas y muestra reporte (M1).");
+            Console.WriteLine("  sim --db <ruta> --competition <uid> --season <label> --report");
+            Console.WriteLine("  advance-season --db <ruta> --competition <uid>");
+            Console.WriteLine("      Avanza a la siguiente temporada (M2).");
             Console.WriteLine("\nTipos de importación:");
             Console.WriteLine("  countries, venues, clubs, people, contracts, seasons, competitions, entries");
         }
@@ -303,18 +305,14 @@ namespace UniFutsal.Cli
             if (string.IsNullOrEmpty(competitionUid) || string.IsNullOrEmpty(seasonLabel))
             {
                 Console.WriteLine("❌ Error: debes especificar --competition <uid> y --season <label>");
-                Console.WriteLine("   Ejemplo: unifutsal sim --db saves/prueba.db --competition comp-lnfs-primera --season 2026/27 --report");
                 return 1;
             }
 
             try
             {
                 Console.WriteLine($"🎮 Simulando {seasons} temporada(s) de {competitionUid} ({seasonLabel})...\n");
-
                 var simulator = new SeasonSimulator(dbPath);
 
-                // Para M1 solo soportamos 1 temporada. Iterar sobre varias requeriría
-                // lógica de avance de calendario (M2).
                 if (seasons > 1)
                 {
                     Console.WriteLine($"⚠️ M1 solo soporta seasons=1. Ignorando seasons={seasons}, simulando 1.");
@@ -331,12 +329,52 @@ namespace UniFutsal.Cli
                 {
                     Console.WriteLine($"✅ Temporada simulada. Usa --report para ver el resumen.");
                 }
-
                 return 0;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Error al simular: {ex.Message}");
+                return 1;
+            }
+        }
+
+        static int HandleAdvanceSeason(string[] args)
+        {
+            string dbPath = "saves/unifutsal_base.db";
+            string competitionUid = "";
+
+            for (int i = 1; i < args.Length; i++)
+            {
+                if (args[i] == "--db" && i + 1 < args.Length) { dbPath = args[i + 1]; i++; }
+                else if (args[i] == "--competition" && i + 1 < args.Length) { competitionUid = args[i + 1]; i++; }
+            }
+
+            if (string.IsNullOrEmpty(competitionUid))
+            {
+                Console.WriteLine("❌ Error: debes especificar --competition <uid>");
+                Console.WriteLine("   Ejemplo: unifutsal advance-season --db saves/prueba.db --competition comp-lnfs-primera");
+                return 1;
+            }
+
+            try
+            {
+                Console.WriteLine($"⏩ Avanzando temporada para {competitionUid}...\n");
+                var advancer = new SeasonAdvancer(dbPath);
+                var result = advancer.AdvanceSeason(competitionUid);
+
+                Console.WriteLine($"✅ Temporada avanzada correctamente:");
+                Console.WriteLine($"   📅 Anterior:     {result.PreviousSeasonLabel}");
+                Console.WriteLine($"   📅 Nueva:        {result.NewSeasonLabel}");
+                Console.WriteLine($"   📋 Inscripciones copiadas: {result.EntriesCopied}");
+                Console.WriteLine($"   ⚽ Partidos generados:     {result.MatchesGenerated}");
+                Console.WriteLine($"   📆 Nueva fecha del mundo:  {result.NewWorldDate}");
+                Console.WriteLine($"\n💡 Para simular la nueva temporada:");
+                Console.WriteLine($"   unifutsal sim --db {dbPath} --competition {competitionUid} --season {result.NewSeasonLabel} --report");
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error al avanzar temporada: {ex.Message}");
                 return 1;
             }
         }
@@ -349,7 +387,6 @@ namespace UniFutsal.Cli
             Console.WriteLine("╚════════════════════════════════════════════════════════════╝");
             Console.WriteLine();
 
-            // Tabla de clasificación
             Console.WriteLine("📊 CLASIFICACIÓN FINAL:");
             Console.WriteLine("┌────┬────────────────────────────┬────┬───┬───┬───┬────┬────┬─────┬─────┐");
             Console.WriteLine("│ #  │ Equipo                     │ PJ │ G │ E │ P │ GF │ GC │ DG  │ PTS │");
@@ -358,18 +395,17 @@ namespace UniFutsal.Cli
             foreach (var s in report.FinalStandings)
             {
                 string name = s.ClubName.Length > 26 ? s.ClubName.Substring(0, 23) + "..." : s.ClubName.PadRight(26);
-                Console.WriteLine($"│ {pos,2} │ {name} │ {s.Played,2} │ {s.Won,2} │ {s.Drawn,1} │ {s.Lost,1} │ {s.GoalsFor,3} │ {s.GoalsAgainst,3} │ {s.GoalDifference,+4} │ {s.Points,3} │");
+                string dg = s.GoalDifference >= 0 ? $"+{s.GoalDifference}" : s.GoalDifference.ToString();
+                Console.WriteLine($"│ {pos,2} │ {name} │ {s.Played,2} │ {s.Won,2} │ {s.Drawn,1} │ {s.Lost,1} │ {s.GoalsFor,3} │ {s.GoalsAgainst,3} │ {dg,4} │ {s.Points,3} │");
                 pos++;
             }
             Console.WriteLine("└────┴────────────────────────────┴────┴───┴───┴───┴────┴────┴─────┴─────┘");
             Console.WriteLine();
 
-            // Campeón y subcampeón
             Console.WriteLine($"🏆 CAMPEÓN:     {report.Champion?.ClubName ?? "N/A"} ({report.Champion?.Points ?? 0} pts)");
             Console.WriteLine($"🥈 Subcampeón:  {report.RunnerUp?.ClubName ?? "N/A"} ({report.RunnerUp?.Points ?? 0} pts)");
             Console.WriteLine();
 
-            // Estadísticas agregadas
             Console.WriteLine("📈 ESTADÍSTICAS DE LA TEMPORADA:");
             Console.WriteLine($"   ⚽ Total de partidos:         {report.TotalMatches}");
             Console.WriteLine($"   ⚽ Total de goles:            {report.TotalGoals}");
@@ -381,13 +417,11 @@ namespace UniFutsal.Cli
             Console.WriteLine($"   🤝 Empates:           {report.Draws,3} ({report.DrawPct:F1}%)");
             Console.WriteLine();
 
-            // Calibración
             Console.WriteLine("🎯 CALIBRACIÓN (v0 de 05-motor.md §15):");
             double avg = report.AverageGoalsPerMatch;
             string status = avg >= 4.5 && avg <= 7.5 ? "✅ EN RANGO" : "⚠️  FUERA DE RANGO";
             Console.WriteLine($"   Goles/partido: {avg:F2} (objetivo LNFS: 5.5–6.5, rango aceptable: 4.5–7.5) {status}");
             Console.WriteLine();
-
             Console.WriteLine("✅ Simulación determinista completada. Mismo seed = mismo resultado.");
         }
     }

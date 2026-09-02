@@ -27,9 +27,24 @@
 - **Decisión:** Mover las CHECK constraints de tabla (XOR null checks) al final de cada `CREATE TABLE`, después de todas las columnas.
 - **Justificación:** Compatibilidad con el parser de SQLite. Las CHECKs column-level (ej. status IN ...) pueden ir junto a la columna; las table-level deben ir al final.
 
-## D-005 — Separación entre Core y Engine: LeagueTable recibe goles crudos
+## D-005 — Separación Core/Engine: LeagueTable recibe goles crudos
 - **Fecha:** 2026-09-02
-- **Contexto:** La `LeagueTable` es lógica de dominio (vive en `Core`) pero consume resultados de partidos generados por el `InstantMatchSimulator` (que vive en `Engine`).
-- **Decisión:** `LeagueTable.RecordResult` recibe los goles como parámetros crudos `(homeId, awayId, homeGoals, awayGoals)` en lugar de un objeto `MatchOutcome`.
-- **Justificación:** Evita referencia circular `Core → Engine` (el núcleo no debe saber nada del motor). El orquestador (`SeasonSimulator`) es quien descompone el `MatchOutcome` en goles al registrar el resultado. Es el patrón clásico "dominio no depende del motor".
-- **Alternativa descartada:** Mover `MatchOutcome` a `Core` (mezclaría un tipo del motor en el dominio).
+- **Contexto:** `LeagueTable` (dominio, vive en `Core`) necesita registrar resultados generados por `InstantMatchSimulator` (vive en `Engine`).
+- **Decisión:** `LeagueTable.RecordResult` recibe `(homeId, awayId, homeGoals, awayGoals)` crudos, no un `MatchOutcome`. El orquestador descompone el outcome antes de registrar.
+- **Justificación:** Evita referencia circular `Core → Engine`. El dominio no debe conocer tipos del motor.
+- **Alternativa descartada:** Mover `MatchOutcome` a `Core` (mezclaría motor y dominio).
+
+## D-006 — Tests de SeasonSimulator: SafeDelete con GC.Collect
+- **Fecha:** 2026-09-02
+- **Contexto:** Tras `WorldLoader.Load()`, SQLite mantiene handles brevemente y `File.Delete` lanza `IOException` en los tests.
+- **Decisión:** Helper `SafeDelete()` que hace `GC.Collect()` + `GC.WaitForPendingFinalizers()` + `try/catch(IOException)`.
+- **Justificación:** Es el patrón estándar para tests con SQLite en archivos temporales. El SO limpia `/temp` eventualmente.
+- **Alternativa descartada:** BD en memoria (`:memory:`) porque `CalendarGenerator` y `WorldLoader` abren conexiones separadas por path.
+
+## D-007 — Observación de calibración v0: diferenciación de fuerza débil [DEUDA M4]
+- **Fecha:** 2026-09-02
+- **Contexto:** En la simulación v0, el campeón fue Sevilla FS (CA 115) en lugar del favorito teórico Madrid FS (CA 120). Goles/partido = 7.20 (extremo alto del rango).
+- **Decisión:** ACEPTAR v0 para M1 (cumple rango y es determinista). Registrar como deuda de calibración para M4.
+- **Justificación:** La fórmula `P_gol = base × (att/(att+def)) × 2.0` comprime las diferencias de rating a ~4% entre equipos. La varianza domina en 14 jornadas.
+- **Plan para M4:** Amplificar diferencias (ej. `(att/def)^1.5`), ajustar `BASE_GOAL_PROB` a la baja para acercarse a 5.5-6.5 goles/partido. Verificar con tests golden de plausibilidad.
+
