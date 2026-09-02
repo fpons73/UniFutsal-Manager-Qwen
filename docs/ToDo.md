@@ -59,8 +59,8 @@
 - [x] T-027: Tests de carga del mundo
 
 ### Calendario y simulación
-- [ ] T-028: Generador de calendario round-robin (ida y vuelta)
-- [ ] T-029: IRng + Xoshiro256** (determinismo)
+- [x] T-028: Generador de calendario round-robin (ida y vuelta)
+- [x] T-029: IRng + Xoshiro256** (determinismo)
 - [ ] T-030: Simulador instantáneo (basado en fuerza de equipos)
 - [ ] T-031: Tests golden de determinismo
 
@@ -70,6 +70,6 @@
 
 ### CLI y persistencia
 - [ ] T-034: Comando `new-game`
-- [ ] T-035: Comando `sim --seasons`
+- [x] T-035: Comando `sim --seasons`
 - [ ] T-036: Save/load del estado del mundo
 - [ ] T-037: Test de roundtrip save/load

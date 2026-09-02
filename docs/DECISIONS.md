@@ -26,3 +26,10 @@
 - **Contexto:** SQLite rechaza `CHECK (...)` sin nombre intercalado entre columnas (error "near signed_on: syntax error" en manager_contracts).
 - **Decisión:** Mover las CHECK constraints de tabla (XOR null checks) al final de cada `CREATE TABLE`, después de todas las columnas.
 - **Justificación:** Compatibilidad con el parser de SQLite. Las CHECKs column-level (ej. status IN ...) pueden ir junto a la columna; las table-level deben ir al final.
+
+## D-005 — Separación entre Core y Engine: LeagueTable recibe goles crudos
+- **Fecha:** 2026-09-02
+- **Contexto:** La `LeagueTable` es lógica de dominio (vive en `Core`) pero consume resultados de partidos generados por el `InstantMatchSimulator` (que vive en `Engine`).
+- **Decisión:** `LeagueTable.RecordResult` recibe los goles como parámetros crudos `(homeId, awayId, homeGoals, awayGoals)` en lugar de un objeto `MatchOutcome`.
+- **Justificación:** Evita referencia circular `Core → Engine` (el núcleo no debe saber nada del motor). El orquestador (`SeasonSimulator`) es quien descompone el `MatchOutcome` en goles al registrar el resultado. Es el patrón clásico "dominio no depende del motor".
+- **Alternativa descartada:** Mover `MatchOutcome` a `Core` (mezclaría un tipo del motor en el dominio).

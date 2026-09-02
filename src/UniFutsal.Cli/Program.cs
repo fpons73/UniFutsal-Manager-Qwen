@@ -17,18 +17,13 @@ namespace UniFutsal.Cli
 
             switch (command)
             {
-                case "init-db":
-                    return HandleInitDb(args);
-                case "validate":
-                    return HandleValidate(args);
-                case "import":
-                    return HandleImport(args);
-                case "generate-test-data":
-                    return HandleGenerateTestData(args);
-                case "generate-calendar":
-                    return HandleGenerateCalendar(args);
-                case "load-world":
-                    return HandleLoadWorld(args);
+                case "init-db": return HandleInitDb(args);
+                case "validate": return HandleValidate(args);
+                case "import": return HandleImport(args);
+                case "generate-test-data": return HandleGenerateTestData(args);
+                case "generate-calendar": return HandleGenerateCalendar(args);
+                case "load-world": return HandleLoadWorld(args);
+                case "sim": return HandleSim(args);
                 default:
                     Console.WriteLine($"⚠️ Comando desconocido: '{command}'");
                     PrintHelp();
@@ -47,6 +42,8 @@ namespace UniFutsal.Cli
             Console.WriteLine("  generate-test-data --out <ruta>   Genera CSVs de prueba.");
             Console.WriteLine("  generate-calendar --db <ruta> --competition <uid> --season <label>");
             Console.WriteLine("  load-world --db <ruta>            Carga el mundo y muestra un resumen.");
+            Console.WriteLine("  sim --seasons N --db <ruta> --competition <uid> --report");
+            Console.WriteLine("      Simula N temporadas y muestra reporte (M1).");
             Console.WriteLine("\nTipos de importación:");
             Console.WriteLine("  countries, venues, clubs, people, contracts, seasons, competitions, entries");
         }
@@ -54,16 +51,10 @@ namespace UniFutsal.Cli
         static int HandleInitDb(string[] args)
         {
             string outPath = "saves/unifutsal_base.db";
-
             for (int i = 1; i < args.Length; i++)
             {
-                if (args[i] == "--out" && i + 1 < args.Length)
-                {
-                    outPath = args[i + 1];
-                    i++;
-                }
+                if (args[i] == "--out" && i + 1 < args.Length) { outPath = args[i + 1]; i++; }
             }
-
             try
             {
                 DatabaseInitializer.Initialize(outPath, "data/migrations");
@@ -79,33 +70,23 @@ namespace UniFutsal.Cli
         static int HandleValidate(string[] args)
         {
             string dbPath = "saves/unifutsal_base.db";
-
             for (int i = 1; i < args.Length; i++)
             {
-                if (args[i] == "--db" && i + 1 < args.Length)
-                {
-                    dbPath = args[i + 1];
-                    i++;
-                }
+                if (args[i] == "--db" && i + 1 < args.Length) { dbPath = args[i + 1]; i++; }
             }
-
             try
             {
                 Console.WriteLine($"🔍 Validando mundo en: {dbPath}\n");
-
                 var validator = new WorldValidator(dbPath);
                 var results = validator.Validate();
-
                 int totalProblems = 0;
                 bool hasErrors = false;
-
                 foreach (var result in results)
                 {
                     if (result.ProblemCount == -1)
                     {
                         Console.WriteLine($"❌ {result.QueryName}: ERROR EN QUERY");
-                        foreach (var detail in result.Details)
-                            Console.WriteLine($"   {detail}");
+                        foreach (var detail in result.Details) Console.WriteLine($"   {detail}");
                         hasErrors = true;
                     }
                     else if (result.Passed)
@@ -118,34 +99,17 @@ namespace UniFutsal.Cli
                         int shown = 0;
                         foreach (var detail in result.Details)
                         {
-                            if (shown >= 5)
-                            {
-                                Console.WriteLine($"   ... y {result.Details.Count - 5} más");
-                                break;
-                            }
+                            if (shown >= 5) { Console.WriteLine($"   ... y {result.Details.Count - 5} más"); break; }
                             Console.WriteLine($"   {detail}");
                             shown++;
                         }
                         totalProblems += result.ProblemCount;
                     }
                 }
-
                 Console.WriteLine();
-                if (hasErrors)
-                {
-                    Console.WriteLine("❌ VALIDACIÓN FALLIDA: hay errores en las queries.");
-                    return 1;
-                }
-                else if (totalProblems > 0)
-                {
-                    Console.WriteLine($"⚠️ VALIDACIÓN CON AVISOS: {totalProblems} problema(s) encontrados.");
-                    return 0;
-                }
-                else
-                {
-                    Console.WriteLine("✅ VALIDACIÓN COMPLETA: mundo limpio.");
-                    return 0;
-                }
+                if (hasErrors) { Console.WriteLine("❌ VALIDACIÓN FALLIDA."); return 1; }
+                else if (totalProblems > 0) { Console.WriteLine($"⚠️ VALIDACIÓN CON AVISOS: {totalProblems} problema(s)."); return 0; }
+                else { Console.WriteLine("✅ VALIDACIÓN COMPLETA: mundo limpio."); return 0; }
             }
             catch (Exception ex)
             {
@@ -159,25 +123,21 @@ namespace UniFutsal.Cli
             string csvPath = "";
             string dbPath = "saves/unifutsal_base.db";
             string importType = "countries";
-
             for (int i = 1; i < args.Length; i++)
             {
                 if (args[i] == "--csv" && i + 1 < args.Length) { csvPath = args[i + 1]; i++; }
                 else if (args[i] == "--db" && i + 1 < args.Length) { dbPath = args[i + 1]; i++; }
                 else if (args[i] == "--type" && i + 1 < args.Length) { importType = args[i + 1].ToLowerInvariant(); i++; }
             }
-
             if (string.IsNullOrEmpty(csvPath))
             {
                 Console.WriteLine("❌ Error: debes especificar --csv <ruta>");
                 return 1;
             }
-
             try
             {
                 Console.WriteLine($"📥 Importando {importType} desde: {csvPath}");
                 Console.WriteLine($"   Base de datos: {dbPath}\n");
-
                 ImportResult result;
                 switch (importType)
                 {
@@ -190,29 +150,26 @@ namespace UniFutsal.Cli
                     case "competitions": result = new CompetitionImporter(dbPath).ImportCompetitions(csvPath); break;
                     case "entries": result = new CompetitionImporter(dbPath).ImportEntries(csvPath); break;
                     default:
-                        Console.WriteLine($"⚠️ Tipo de importación no soportado: '{importType}'");
+                        Console.WriteLine($"⚠️ Tipo no soportado: '{importType}'");
                         return 1;
                 }
-
-                Console.WriteLine($"📊 Resultado de la importación:");
+                Console.WriteLine($"📊 Resultado:");
                 Console.WriteLine($"   Filas totales: {result.TotalRows}");
                 Console.WriteLine($"   Importados:    {result.Imported}");
                 Console.WriteLine($"   Saltados:      {result.Skipped}");
                 Console.WriteLine($"   Errores:       {result.Errors}");
-
                 if (result.ErrorMessages.Count > 0)
                 {
                     Console.WriteLine("\n⚠️ Detalles:");
                     foreach (var msg in result.ErrorMessages) Console.WriteLine($"   {msg}");
                 }
-
                 Console.WriteLine();
                 if (result.Errors > 0) { Console.WriteLine("❌ IMPORTACIÓN CON ERRORES."); return 1; }
                 else { Console.WriteLine("✅ IMPORTACIÓN COMPLETADA."); return 0; }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Error fatal en la importación: {ex.Message}");
+                Console.WriteLine($"❌ Error fatal: {ex.Message}");
                 return 1;
             }
         }
@@ -220,12 +177,10 @@ namespace UniFutsal.Cli
         static int HandleGenerateTestData(string[] args)
         {
             string outputPath = "data/csv";
-
             for (int i = 1; i < args.Length; i++)
             {
                 if (args[i] == "--out" && i + 1 < args.Length) { outputPath = args[i + 1]; i++; }
             }
-
             try
             {
                 Console.WriteLine($"🎲 Generando datos de prueba en: {outputPath}\n");
@@ -244,20 +199,17 @@ namespace UniFutsal.Cli
             string dbPath = "saves/unifutsal_base.db";
             string competitionUid = "";
             string seasonLabel = "";
-
             for (int i = 1; i < args.Length; i++)
             {
                 if (args[i] == "--db" && i + 1 < args.Length) { dbPath = args[i + 1]; i++; }
                 else if (args[i] == "--competition" && i + 1 < args.Length) { competitionUid = args[i + 1]; i++; }
                 else if (args[i] == "--season" && i + 1 < args.Length) { seasonLabel = args[i + 1]; i++; }
             }
-
             if (string.IsNullOrEmpty(competitionUid) || string.IsNullOrEmpty(seasonLabel))
             {
                 Console.WriteLine("❌ Error: debes especificar --competition <uid> y --season <label>");
                 return 1;
             }
-
             try
             {
                 Console.WriteLine($"📅 Generando calendario para {competitionUid} ({seasonLabel})...");
@@ -276,19 +228,15 @@ namespace UniFutsal.Cli
         static int HandleLoadWorld(string[] args)
         {
             string dbPath = "saves/unifutsal_base.db";
-
             for (int i = 1; i < args.Length; i++)
             {
                 if (args[i] == "--db" && i + 1 < args.Length) { dbPath = args[i + 1]; i++; }
             }
-
             try
             {
                 Console.WriteLine($"🌍 Cargando mundo desde: {dbPath}\n");
-
                 var loader = new WorldLoader(dbPath);
                 var world = loader.Load();
-
                 Console.WriteLine("📊 Resumen del mundo cargado:");
                 Console.WriteLine($"   🌐 Confederaciones:  {world.Confederations.Count}");
                 Console.WriteLine($"   🏳️ Países:           {world.Countries.Count}");
@@ -300,11 +248,8 @@ namespace UniFutsal.Cli
                 Console.WriteLine($"   📅 Temporadas:       {world.Seasons.Count}");
                 Console.WriteLine($"   🏆 Competiciones:    {world.Competitions.Count}");
                 Console.WriteLine($"   📋 Inscripciones:    {world.CompetitionEntries.Count}");
-                Console.WriteLine();
-                Console.WriteLine($"   📆 Fecha del mundo:  {world.WorldDate}");
+                Console.WriteLine($"\n   📆 Fecha del mundo:  {world.WorldDate}");
                 Console.WriteLine($"   🌱 Seed del mundo:   {world.WorldSeed}");
-
-                // Mostrar detalle por club
                 if (world.Clubs.Count > 0)
                 {
                     Console.WriteLine("\n🏢 Detalle por club:");
@@ -315,8 +260,6 @@ namespace UniFutsal.Cli
                         Console.WriteLine($"   {club.Name} ({club.Uid}): {players.Count} jugadores · {venueName}");
                     }
                 }
-
-                // Mostrar detalle por competición
                 if (world.Competitions.Count > 0)
                 {
                     Console.WriteLine("\n🏆 Detalle por competición:");
@@ -326,7 +269,6 @@ namespace UniFutsal.Cli
                         Console.WriteLine($"   {comp.Name} ({comp.Uid}): {entries.Count} equipos inscritos");
                     }
                 }
-
                 Console.WriteLine("\n✅ Mundo cargado correctamente.");
                 return 0;
             }
@@ -335,6 +277,118 @@ namespace UniFutsal.Cli
                 Console.WriteLine($"❌ Error al cargar el mundo: {ex.Message}");
                 return 1;
             }
+        }
+
+        static int HandleSim(string[] args)
+        {
+            string dbPath = "saves/unifutsal_base.db";
+            int seasons = 1;
+            string competitionUid = "";
+            string seasonLabel = "";
+            bool showReport = false;
+
+            for (int i = 1; i < args.Length; i++)
+            {
+                if (args[i] == "--db" && i + 1 < args.Length) { dbPath = args[i + 1]; i++; }
+                else if (args[i] == "--seasons" && i + 1 < args.Length)
+                {
+                    if (int.TryParse(args[i + 1], out int s)) seasons = s;
+                    i++;
+                }
+                else if (args[i] == "--competition" && i + 1 < args.Length) { competitionUid = args[i + 1]; i++; }
+                else if (args[i] == "--season" && i + 1 < args.Length) { seasonLabel = args[i + 1]; i++; }
+                else if (args[i] == "--report") { showReport = true; }
+            }
+
+            if (string.IsNullOrEmpty(competitionUid) || string.IsNullOrEmpty(seasonLabel))
+            {
+                Console.WriteLine("❌ Error: debes especificar --competition <uid> y --season <label>");
+                Console.WriteLine("   Ejemplo: unifutsal sim --db saves/prueba.db --competition comp-lnfs-primera --season 2026/27 --report");
+                return 1;
+            }
+
+            try
+            {
+                Console.WriteLine($"🎮 Simulando {seasons} temporada(s) de {competitionUid} ({seasonLabel})...\n");
+
+                var simulator = new SeasonSimulator(dbPath);
+
+                // Para M1 solo soportamos 1 temporada. Iterar sobre varias requeriría
+                // lógica de avance de calendario (M2).
+                if (seasons > 1)
+                {
+                    Console.WriteLine($"⚠️ M1 solo soporta seasons=1. Ignorando seasons={seasons}, simulando 1.");
+                    seasons = 1;
+                }
+
+                var report = simulator.SimulateSeason(competitionUid, seasonLabel, persist: true);
+
+                if (showReport)
+                {
+                    PrintReport(report);
+                }
+                else
+                {
+                    Console.WriteLine($"✅ Temporada simulada. Usa --report para ver el resumen.");
+                }
+
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error al simular: {ex.Message}");
+                return 1;
+            }
+        }
+
+        static void PrintReport(SeasonReport report)
+        {
+            Console.WriteLine("╔════════════════════════════════════════════════════════════╗");
+            Console.WriteLine($"║  🏆 REPORTE DE TEMPORADA: {report.CompetitionName}");
+            Console.WriteLine($"║  📅 Temporada: {report.SeasonLabel}");
+            Console.WriteLine("╚════════════════════════════════════════════════════════════╝");
+            Console.WriteLine();
+
+            // Tabla de clasificación
+            Console.WriteLine("📊 CLASIFICACIÓN FINAL:");
+            Console.WriteLine("┌────┬────────────────────────────┬────┬───┬───┬───┬────┬────┬─────┬─────┐");
+            Console.WriteLine("│ #  │ Equipo                     │ PJ │ G │ E │ P │ GF │ GC │ DG  │ PTS │");
+            Console.WriteLine("├────┼────────────────────────────┼────┼───┼───┼───┼────┼────┼─────┼─────┤");
+            int pos = 1;
+            foreach (var s in report.FinalStandings)
+            {
+                string name = s.ClubName.Length > 26 ? s.ClubName.Substring(0, 23) + "..." : s.ClubName.PadRight(26);
+                Console.WriteLine($"│ {pos,2} │ {name} │ {s.Played,2} │ {s.Won,2} │ {s.Drawn,1} │ {s.Lost,1} │ {s.GoalsFor,3} │ {s.GoalsAgainst,3} │ {s.GoalDifference,+4} │ {s.Points,3} │");
+                pos++;
+            }
+            Console.WriteLine("└────┴────────────────────────────┴────┴───┴───┴───┴────┴────┴─────┴─────┘");
+            Console.WriteLine();
+
+            // Campeón y subcampeón
+            Console.WriteLine($"🏆 CAMPEÓN:     {report.Champion?.ClubName ?? "N/A"} ({report.Champion?.Points ?? 0} pts)");
+            Console.WriteLine($"🥈 Subcampeón:  {report.RunnerUp?.ClubName ?? "N/A"} ({report.RunnerUp?.Points ?? 0} pts)");
+            Console.WriteLine();
+
+            // Estadísticas agregadas
+            Console.WriteLine("📈 ESTADÍSTICAS DE LA TEMPORADA:");
+            Console.WriteLine($"   ⚽ Total de partidos:         {report.TotalMatches}");
+            Console.WriteLine($"   ⚽ Total de goles:            {report.TotalGoals}");
+            Console.WriteLine($"   📊 Goles por partido (media): {report.AverageGoalsPerMatch:F2}");
+            Console.WriteLine();
+            Console.WriteLine("📊 DISTRIBUCIÓN DE RESULTADOS:");
+            Console.WriteLine($"   🏠 Victorias local:   {report.HomeWins,3} ({report.HomeWinPct:F1}%)");
+            Console.WriteLine($"   ✈️  Victorias visita:  {report.AwayWins,3} ({report.AwayWinPct:F1}%)");
+            Console.WriteLine($"   🤝 Empates:           {report.Draws,3} ({report.DrawPct:F1}%)");
+            Console.WriteLine();
+
+            // Calibración
+            Console.WriteLine("🎯 CALIBRACIÓN (v0 de 05-motor.md §15):");
+            double avg = report.AverageGoalsPerMatch;
+            string status = avg >= 4.5 && avg <= 7.5 ? "✅ EN RANGO" : "⚠️  FUERA DE RANGO";
+            Console.WriteLine($"   Goles/partido: {avg:F2} (objetivo LNFS: 5.5–6.5, rango aceptable: 4.5–7.5) {status}");
+            Console.WriteLine();
+
+            Console.WriteLine("✅ Simulación determinista completada. Mismo seed = mismo resultado.");
         }
     }
 }

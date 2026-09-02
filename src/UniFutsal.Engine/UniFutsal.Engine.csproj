@@ -1,12 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
-  <ItemGroup>
-    <ProjectReference Include="..\UniFutsal.Core\UniFutsal.Core.csproj" />
-  </ItemGroup>
-
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <Nullable>enable</Nullable>
+    <LangVersion>8.0</LangVersion>
   </PropertyGroup>
-
+  <ItemGroup>
+    <ProjectReference Include="..\UniFutsal.Core\UniFutsal.Core.csproj" />
+  </ItemGroup>
 </Project>
