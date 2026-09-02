@@ -26,8 +26,42 @@
 - [x] T-017: Crear CSV de prueba `data/csv/countries.csv` con 5 países
 
 ### Criterio de salida de M0
-- [ ] `dotnet build` verde
-- [ ] `dotnet test` verde
-- [ ] `unifutsal init-db` crea la BD
-- [ ] `unifutsal validate` reporta 0 errores
-- [ ] `unifutsal import` carga los 5 países
+- [x] `dotnet build` verde
+- [x] `dotnet test` verde
+- [x] `unifutsal init-db` crea la BD
+- [x] `unifutsal validate` reporta 0 errores
+- [x] `unifutsal import` carga los 5 países
+
+## M1 · Núcleo (fase activa)
+
+### Modelo de dominio (el mundo en memoria)
+- [x] T-018: Entidades geográficas en Core (Confederation, Country, Region, Venue)
+- [x] T-019: Entidades de personas (Person, Player con atributos, Staff)
+- [x] T-020: Entidades de clubes (Club, Contract)
+- [x] T-021: Entidades de competiciones (Season, Competition, CompetitionEntry)
+- [x] T-022: Entidades de partidos (Match, MatchResult)
+
+### Datos de prueba (una liga mínima)
+- [ ] T-023: Ampliar CsvImporter (venues, clubs, people, competitions)
+- [ ] T-024: Generar CSVs plausibles de una liga de prueba (8 clubes)
+- [ ] T-025: Cargar la liga y validar con `validate`
+
+### Mundo en memoria
+- [ ] T-026: WorldLoader (carga la BD completa a objetos C#)
+- [ ] T-027: Tests de carga del mundo
+
+### Calendario y simulación
+- [ ] T-028: Generador de calendario round-robin (ida y vuelta)
+- [ ] T-029: IRng + Xoshiro256** (determinismo)
+- [ ] T-030: Simulador instantáneo (basado en fuerza de equipos)
+- [ ] T-031: Tests golden de determinismo
+
+### Clasificación y temporada
+- [ ] T-032: Cálculo de clasificación (puntos, gol average)
+- [ ] T-033: Orquestador de temporada (simular todas las jornadas)
+
+### CLI y persistencia
+- [ ] T-034: Comando `new-game`
+- [ ] T-035: Comando `sim --seasons`
+- [ ] T-036: Save/load del estado del mundo
+- [ ] T-037: Test de roundtrip save/load
