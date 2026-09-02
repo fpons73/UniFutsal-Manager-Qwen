@@ -9,14 +9,6 @@ obj/
 packages/
 *.nupkg
 
-# Unity (cuando llegue M3)
-[Ll]ibrary/
-[Tt]emp/
-[Oo]bj/
-[Bb]uild/
-[Bb]uilds/
-[Ll]ogs/
-
 # OS
 .DS_Store
 Thumbs.db
@@ -25,9 +17,18 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+*.userprefs
 
-# Saves (no queremos subir las bases de datos de prueba)
+# Saves (bases de datos de prueba NO se suben)
 saves/
 
-# Logs de compilación
+# Logs
 *.log
+
+# Unity (por si acaso más adelante)
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
