@@ -43,6 +43,10 @@
 
 ### Datos de prueba (una liga mínima)
 - [ ] T-023: Ampliar CsvImporter (venues, clubs, people, competitions)
+  - [x] T-023a: Importador de venues (venues.csv)
+  - [x] T-023b: Importador de clubs (clubs.csv)
+  - [x] T-023c: Importador de people (people.csv)
+  - [ ] T-023d: Importador de competitions (competitions.json)
 - [ ] T-024: Generar CSVs plausibles de una liga de prueba (8 clubes)
 - [ ] T-025: Cargar la liga y validar con `validate`
 

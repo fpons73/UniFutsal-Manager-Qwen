@@ -23,6 +23,8 @@ namespace UniFutsal.Cli
                     return HandleValidate(args);
                 case "import":
                     return HandleImport(args);
+                case "generate-test-data":
+                    return HandleGenerateTestData(args);
                 default:
                     Console.WriteLine($"⚠️ Comando desconocido: '{command}'");
                     PrintHelp();
@@ -37,13 +39,16 @@ namespace UniFutsal.Cli
             Console.WriteLine("\nComandos disponibles:");
             Console.WriteLine("  init-db --out <ruta>              Crea una nueva base de datos con el schema inicial.");
             Console.WriteLine("  validate --db <ruta>              Ejecuta las 7 queries de validación del mundo.");
-            Console.WriteLine("  import --csv <ruta> --db <ruta>   Importa un CSV a la base de datos.");
+            Console.WriteLine("  import --csv <ruta> --db <ruta> --type <tipo>   Importa un CSV a la base de datos.");
+            Console.WriteLine("  generate-test-data --out <ruta>   Genera CSVs de prueba (people, contracts, seasons, competitions, entries).");
+            Console.WriteLine("\nTipos de importación:");
+            Console.WriteLine("  countries, venues, clubs, people, contracts, seasons, competitions, entries");
         }
 
         static int HandleInitDb(string[] args)
         {
             string outPath = "saves/unifutsal_base.db";
-            
+
             for (int i = 1; i < args.Length; i++)
             {
                 if (args[i] == "--out" && i + 1 < args.Length)
@@ -68,7 +73,7 @@ namespace UniFutsal.Cli
         static int HandleValidate(string[] args)
         {
             string dbPath = "saves/unifutsal_base.db";
-            
+
             for (int i = 1; i < args.Length; i++)
             {
                 if (args[i] == "--db" && i + 1 < args.Length)
@@ -81,7 +86,7 @@ namespace UniFutsal.Cli
             try
             {
                 Console.WriteLine($"🔍 Validando mundo en: {dbPath}\n");
-                
+
                 var validator = new WorldValidator(dbPath);
                 var results = validator.Validate();
 
@@ -147,6 +152,7 @@ namespace UniFutsal.Cli
         {
             string csvPath = "";
             string dbPath = "saves/unifutsal_base.db";
+            string importType = "countries";
 
             for (int i = 1; i < args.Length; i++)
             {
@@ -160,22 +166,57 @@ namespace UniFutsal.Cli
                     dbPath = args[i + 1];
                     i++;
                 }
+                else if (args[i] == "--type" && i + 1 < args.Length)
+                {
+                    importType = args[i + 1].ToLowerInvariant();
+                    i++;
+                }
             }
 
             if (string.IsNullOrEmpty(csvPath))
             {
                 Console.WriteLine("❌ Error: debes especificar --csv <ruta>");
-                Console.WriteLine("   Ejemplo: unifutsal import --csv data/csv/countries.csv --db saves/prueba.db");
+                Console.WriteLine("   Ejemplo: unifutsal import --csv data/csv/countries.csv --db saves/prueba.db --type countries");
                 return 1;
             }
 
             try
             {
-                Console.WriteLine($"📥 Importando CSV: {csvPath}");
+                Console.WriteLine($"📥 Importando {importType} desde: {csvPath}");
                 Console.WriteLine($"   Base de datos: {dbPath}\n");
 
-                var importer = new CsvImporter(dbPath);
-                var result = importer.ImportCountries(csvPath);
+                ImportResult result;
+                switch (importType)
+                {
+                    case "countries":
+                        result = new CsvImporter(dbPath).ImportCountries(csvPath);
+                        break;
+                    case "venues":
+                        result = new VenueImporter(dbPath).Import(csvPath);
+                        break;
+                    case "clubs":
+                        result = new ClubImporter(dbPath).Import(csvPath);
+                        break;
+                    case "people":
+                        result = new PeopleImporter(dbPath).Import(csvPath);
+                        break;
+                    case "contracts":
+                        result = new ContractImporter(dbPath).Import(csvPath);
+                        break;
+                    case "seasons":
+                        result = new CompetitionImporter(dbPath).ImportSeasons(csvPath);
+                        break;
+                    case "competitions":
+                        result = new CompetitionImporter(dbPath).ImportCompetitions(csvPath);
+                        break;
+                    case "entries":
+                        result = new CompetitionImporter(dbPath).ImportEntries(csvPath);
+                        break;
+                    default:
+                        Console.WriteLine($"⚠️ Tipo de importación no soportado: '{importType}'");
+                        Console.WriteLine("   Tipos disponibles: countries, venues, clubs, people, contracts, seasons, competitions, entries");
+                        return 1;
+                }
 
                 Console.WriteLine($"📊 Resultado de la importación:");
                 Console.WriteLine($"   Filas totales: {result.TotalRows}");
@@ -207,6 +248,32 @@ namespace UniFutsal.Cli
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Error fatal en la importación: {ex.Message}");
+                return 1;
+            }
+        }
+
+        static int HandleGenerateTestData(string[] args)
+        {
+            string outputPath = "data/csv";
+
+            for (int i = 1; i < args.Length; i++)
+            {
+                if (args[i] == "--out" && i + 1 < args.Length)
+                {
+                    outputPath = args[i + 1];
+                    i++;
+                }
+            }
+
+            try
+            {
+                Console.WriteLine($"🎲 Generando datos de prueba en: {outputPath}\n");
+                TestDataGenerator.Generate(outputPath);
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error al generar datos: {ex.Message}");
                 return 1;
             }
         }

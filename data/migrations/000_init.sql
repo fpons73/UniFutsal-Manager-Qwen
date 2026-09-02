@@ -705,12 +705,12 @@ CREATE TABLE manager_contracts (
    manager_id   INTEGER NOT NULL REFERENCES managers(person_id) ON DELETE CASCADE,
    club_id      INTEGER REFERENCES clubs(id),
    nt_id        INTEGER REFERENCES national_teams(id),
-   CHECK ((club_id IS NULL) <> (nt_id IS NULL)),
    signed_on    TEXT NOT NULL,
    until_date   TEXT,
    wage_monthly INTEGER NOT NULL DEFAULT 0,
    status       TEXT NOT NULL DEFAULT 'vigente'
-                CHECK (status IN ('vigente','finalizado','rescindido'))
+                CHECK (status IN ('vigente','finalizado','rescindido')),
+   CHECK ((club_id IS NULL) <> (nt_id IS NULL))
 );
 
 CREATE TABLE manager_history (

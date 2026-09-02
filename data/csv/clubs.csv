@@ -1,0 +1,9 @@
+uid,name,short_name,nickname,country_code3,city,founded_year,primary_color,secondary_color,kit_pattern,reputation,venue_uid,training_facilities,youth_facilities,recruitment,physio_rating,bank_balance,debt,transfer_budget,wage_budget_monthly,is_active
+club-madrid-fs,Madrid FS,MAD,Los Rojos,ESP,Madrid,1975,#E63946,#FFFFFF,solid,85.0,venue-jorge-garzon,16,15,14,15,2500000,0,800000,120000,1
+club-sevilla-fs,Sevilla FS,SEV,Los Blancos,ESP,Sevilla,1982,#FFFFFF,#D00000,stripes,78.0,venue-blas-infante,14,13,13,14,1800000,100000,600000,100000,1
+club-zaragoza-fs,Zaragoza FS,ZAR,Los Maños,ESP,Zaragoza,1990,#2A9D8F,#FFFFFF,halved,72.0,venue-pabellon-norte,13,12,12,13,1200000,50000,400000,80000,1
+club-valencia-fs,Valencia FS,VAL,Los Naranjas,ESP,Valencia,1978,#F4A261,#264653,solid,75.0,venue-olimpico,14,13,12,13,1500000,0,500000,90000,1
+club-guadalajara-fs,Guadalajara FS,GUA,Los Alcarreños,ESP,Guadalajara,1995,#E9C46A,#264653,sash,65.0,venue-guadalajara-arena,12,11,11,12,800000,0,300000,60000,1
+club-cartagena-fs,Cartagena FS,CAR,Los Cartageneros,ESP,Cartagena,1988,#9B5DE5,#F15BB5,stripes,70.0,venue-cartagena-futsal,13,12,11,12,1000000,0,350000,70000,1
+club-burela-fs,Burela FS,BUR,Los Gallegos,ESP,Burela,2001,#00BBF9,#00F5D4,solid,60.0,venue-burela-pavilion,11,10,10,11,600000,0,250000,50000,1
+club-noia-fs,Noia FS,NOI,Los Noieses,ESP,Noia,1998,#8D99AE,#EF476F,solid,58.0,venue-noia-pavilion,11,10,10,11,500000,0,200000,45000,1
