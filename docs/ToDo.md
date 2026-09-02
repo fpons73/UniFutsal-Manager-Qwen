@@ -42,12 +42,16 @@
 - [x] T-022: Entidades de partidos (Match, MatchResult)
 
 ### Datos de prueba (una liga mínima)
-- [ ] T-023: Ampliar CsvImporter (venues, clubs, people, competitions)
+- [x] T-023: Ampliar CsvImporter (venues, clubs, people, competitions)
   - [x] T-023a: Importador de venues (venues.csv)
   - [x] T-023b: Importador de clubs (clubs.csv)
   - [x] T-023c: Importador de people (people.csv)
-  - [ ] T-023d: Importador de competitions (competitions.json)
+  - [x] T-023d: Importador de competitions (competitions.json)
 - [ ] T-024: Generar CSVs plausibles de una liga de prueba (8 clubes)
+  - [] T-024a: Crear la clase World en Core
+  - [] T-024b: Crear el WorldLoader en Data
+  - [] T-024c: Test de Carta
+  - [] T-024d: Comando CLI load-world para verificar
 - [ ] T-025: Cargar la liga y validar con `validate`
 
 ### Mundo en memoria

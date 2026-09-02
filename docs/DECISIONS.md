@@ -20,3 +20,9 @@
 - **Contexto:** Importador de países para M0.
 - **Decisión:** Parseo simple con `Split(',')`, sin librería externa.
 - **Justificación:** Los datos de M0 no contienen comas en los campos. Evita dependencias innecesarias (Regla 6). Si se necesita parseo complejo, se evaluará CsvHelper.
+
+## D-004 — Position of table-level CHECK constraints in DDL
+- **Fecha:** 2026-09-02
+- **Contexto:** SQLite rechaza `CHECK (...)` sin nombre intercalado entre columnas (error "near signed_on: syntax error" en manager_contracts).
+- **Decisión:** Mover las CHECK constraints de tabla (XOR null checks) al final de cada `CREATE TABLE`, después de todas las columnas.
+- **Justificación:** Compatibilidad con el parser de SQLite. Las CHECKs column-level (ej. status IN ...) pueden ir junto a la columna; las table-level deben ir al final.
