@@ -18,11 +18,14 @@ namespace UniFutsal.Data
         public int PlayersImproved { get; set; }
         public int PlayersDeclined { get; set; }
         public int PlayersStable { get; set; }
+        public int PlayersRetired { get; set; }
+        public int ContractsExpired { get; set; }
     }
 
     /// <summary>
     /// Avanza el mundo de una temporada a la siguiente.
-    /// Crea la nueva temporada, copia inscripciones, genera calendario y actualiza world_date.
+    /// Crea la nueva temporada, copia inscripciones, genera calendario,
+    /// desarrolla jugadores, procesa retiradas y expiraciones, y actualiza world_date.
     /// Determinista: no usa Random ni DateTime.Now.
     /// </summary>
     public sealed class SeasonAdvancer
@@ -49,7 +52,7 @@ namespace UniFutsal.Data
                 throw new ArgumentException($"Competición '{competitionUid}' no encontrada.");
             }
 
-            // 2. Buscar la temporada más reciente con inscripciones para esta competición
+            // 2. Buscar la temporada más reciente con inscripciones
             long currentSeasonId = GetLatestSeasonForCompetition(connection, competitionId);
             if (currentSeasonId == 0)
             {
@@ -78,7 +81,6 @@ namespace UniFutsal.Data
             DateTime nextStartDate = currentStartDate.AddYears(1);
             DateTime nextEndDate = currentEndDate.AddYears(1);
 
-            // Verificar que la siguiente temporada no existe ya
             if (SeasonExists(connection, nextLabel))
             {
                 throw new InvalidOperationException(
@@ -91,15 +93,7 @@ namespace UniFutsal.Data
             // 7. Copiar inscripciones de clubes
             int entriesCopied = CopyEntries(connection, currentSeasonId, nextSeasonId, competitionId);
 
-            // 8. Generar calendario (CalendarGenerator usa su propia conexión)
-            var generator = new CalendarGenerator(_dbPath);
-            int matchesGenerated = generator.Generate(competitionUid, nextLabel);
-
-            // 9. Actualizar world_date
-            string newWorldDate = nextStartDate.ToString("yyyy-MM-dd");
-            UpdateWorldDate(connection, newWorldDate);
-
-            // 10. Desarrollo anual de jugadores (envejecimiento + mejora/declive)
+            // 8. Desarrollo anual de jugadores (envejecimiento + mejora/declive)
             var developer = new PlayerDeveloper(_dbPath);
             var devRecords = developer.DevelopAll(nextLabel);
             int improved = 0, declined = 0, stable = 0;
@@ -109,6 +103,21 @@ namespace UniFutsal.Data
                 else if (r.Delta < 0) declined++;
                 else stable++;
             }
+
+            // 9. Retiradas de jugadores veteranos
+            var retirer = new PlayerRetirer(_dbPath);
+            var retiredIds = retirer.ProcessRetirements(nextLabel);
+
+            // 10. Expiración de contratos
+            int contractsExpired = retirer.ProcessContractExpirations(nextLabel);
+
+            // 11. Generar calendario (CalendarGenerator usa su propia conexión)
+            var generator = new CalendarGenerator(_dbPath);
+            int matchesGenerated = generator.Generate(competitionUid, nextLabel);
+
+            // 12. Actualizar world_date
+            string newWorldDate = nextStartDate.ToString("yyyy-MM-dd");
+            UpdateWorldDate(connection, newWorldDate);
 
             return new SeasonAdvanceResult
             {
@@ -120,7 +129,9 @@ namespace UniFutsal.Data
                 PlayersDeveloped = devRecords.Count,
                 PlayersImproved = improved,
                 PlayersDeclined = declined,
-                PlayersStable = stable
+                PlayersStable = stable,
+                PlayersRetired = retiredIds.Count,
+                ContractsExpired = contractsExpired
             };
         }
 
@@ -138,7 +149,6 @@ namespace UniFutsal.Data
 
         private long GetLatestSeasonForCompetition(SqliteConnection connection, long competitionId)
         {
-            // Buscamos la temporada con start_date más reciente que tenga inscripciones
             using var cmd = new SqliteCommand(@"
                 SELECT ce.season_id
                 FROM competition_entries ce
@@ -186,7 +196,6 @@ namespace UniFutsal.Data
 
         private static string ComputeNextSeasonLabel(string currentLabel)
         {
-            // Formato: "2026/27" → "2027/28"
             var parts = currentLabel.Split('/');
             if (parts.Length == 2)
             {
@@ -195,7 +204,6 @@ namespace UniFutsal.Data
                 {
                     int nextStart = startYear + 1;
                     int nextEnd = nextStart + 1;
-                    // Mantener formato de 2 dígitos si el original lo tenía
                     string endStr;
                     if (parts[1].Length == 2)
                     {

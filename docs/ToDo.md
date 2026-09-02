@@ -65,7 +65,7 @@
 - [x] T-031: Tests golden de determinismo
 
 ### Clasificación y temporada
-- [ ] T-032: Cálculo de clasificación (puntos, gol average)
+- [x] T-032: Cálculo de clasificación (puntos, gol average)
 - [ ] T-033: Orquestador de temporada (simular todas las jornadas)
 
 ### CLI y persistencia

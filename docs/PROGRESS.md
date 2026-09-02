@@ -30,3 +30,12 @@
     → Ver D-007 en DECISIONES.md.
 - **Decisiones nuevas:** D-005, D-006, D-007 (ver DECISIONES.md).
 - **Siguiente:** M2 — Mundo Vivo (10 temporadas, mercado IA, ascensos/descensos).
+
+## 2026-09-03 — T-031: Desarrollo de jugadores ✅
+- Hecho: PlayerDeveloper + integración en SeasonAdvancer
+- **Resultado:** 96 jugadores desarrollados: 42 mejorados (43.75%), 32 estables (33.33%), 22 declinados (22.92%)
+- **Curvas de desarrollo:** crecimiento rápido (<21), moderado (21-24), meseta (25-27), estabilidad (28-31), declive (32+)
+- **Porteros:** pico a los 31 (vs 28 campo), declive a los 35
+- **Determinismo:** RNG Xoshiro256** sembrado con seasonYear × constante
+- **Snapshots:** guardados en development_snapshots (person_id, month, ca, attributes_json)
+- **Siguiente:** T-032 (Retiradas y fin de contratos)

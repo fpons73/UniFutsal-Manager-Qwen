@@ -186,7 +186,7 @@ namespace UniFutsal.Data
             File.WriteAllLines(path, lines);
         }
 
-        private static void GenerateContractsCsv(string path)
+                private static void GenerateContractsCsv(string path)
         {
             var header = "person_uid,club_uid,scope,signed_on,effective_from,effective_until,wage_monthly,release_clause,squad_number";
             var lines = new List<string> { header };
@@ -202,15 +202,44 @@ namespace UniFutsal.Data
                     string uid = $"person-{clubUid}-{i + 1:000}";
                     int wage = 2000 + (ca * 30) + Rng.Next(-500, 501);
                     int release = Rng.NextDouble() < 0.7 ? wage * 60 : 0;
-                    lines.Add($"{uid},{clubUid},primer_equipo,2026-07-01,2026-07-01,2028-06-30,{wage},{release},{i + 1}");
+                    int durationYears = GetRandomContractDuration();
+                    string effectiveUntil = ComputeContractEndDate(2026, durationYears);
+                    lines.Add($"{uid},{clubUid},primer_equipo,2026-07-01,2026-07-01,{effectiveUntil},{wage},{release},{i + 1}");
                 }
 
                 string coachUid = $"person-{clubUid}-coach";
                 int coachWage = 5000 + Rng.Next(-1000, 3001);
-                lines.Add($"{coachUid},{clubUid},staff,2026-07-01,2026-07-01,2028-06-30,{coachWage},0,");
+                int coachDuration = GetRandomContractDuration();
+                string coachUntil = ComputeContractEndDate(2026, coachDuration);
+                lines.Add($"{coachUid},{clubUid},staff,2026-07-01,2026-07-01,{coachUntil},{coachWage},0,");
             }
 
             File.WriteAllLines(path, lines);
+        }
+
+        /// <summary>
+        /// Distribución de duraciones de contrato:
+        /// 30% 1 año, 30% 2 años, 20% 3 años, 15% 4 años, 5% 5 años.
+        /// Así solo ~25-30% de los contratos expiran cada año (realista).
+        /// </summary>
+        private static int GetRandomContractDuration()
+        {
+            double roll = Rng.NextDouble();
+            if (roll < 0.30) return 1;
+            if (roll < 0.60) return 2;
+            if (roll < 0.80) return 3;
+            if (roll < 0.95) return 4;
+            return 5;
+        }
+
+        /// <summary>
+        /// Calcula la fecha de fin de contrato: 30 de junio del año de inicio + duración.
+        /// Ej: inicio 2026, duración 2 → 2028-06-30
+        /// </summary>
+        private static string ComputeContractEndDate(int startYear, int durationYears)
+        {
+            int endYear = startYear + durationYears;
+            return $"{endYear}-06-30";
         }
 
         private static string RandomChoice(params string[] options)

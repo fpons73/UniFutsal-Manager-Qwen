@@ -373,6 +373,10 @@ namespace UniFutsal.Cli
                 Console.WriteLine($"   📈 Mejorados:  {result.PlayersImproved}");
                 Console.WriteLine($"   ➡️  Estables:   {result.PlayersStable}");
                 Console.WriteLine($"   📉 Declinados: {result.PlayersDeclined}");
+                Console.WriteLine();
+                Console.WriteLine($"👴 Retiradas y contratos:");
+                Console.WriteLine($"   🚪 Jugadores retirados:    {result.PlayersRetired}");
+                Console.WriteLine($"   📄 Contratos expirados:    {result.ContractsExpired}");
                 Console.WriteLine($"\n💡 Para simular la nueva temporada:");
                 Console.WriteLine($"   unifutsal sim --db {dbPath} --competition {competitionUid} --season {result.NewSeasonLabel} --report");
                 return 0;
