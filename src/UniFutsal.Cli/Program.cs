@@ -45,9 +45,8 @@ namespace UniFutsal.Cli
             Console.WriteLine("  load-world --db <ruta>            Carga el mundo y muestra un resumen.");
             Console.WriteLine("  sim --db <ruta> --competition <uid> --season <label> --report");
             Console.WriteLine("  advance-season --db <ruta> --competition <uid>");
-            Console.WriteLine("      Avanza a la siguiente temporada (M2).");
             Console.WriteLine("\nTipos de importación:");
-            Console.WriteLine("  countries, venues, clubs, people, contracts, seasons, competitions, entries");
+            Console.WriteLine("  countries, venues, clubs, people, contracts, seasons, competitions, entries, competition_links");
         }
 
         static int HandleInitDb(string[] args)
@@ -151,6 +150,7 @@ namespace UniFutsal.Cli
                     case "seasons": result = new CompetitionImporter(dbPath).ImportSeasons(csvPath); break;
                     case "competitions": result = new CompetitionImporter(dbPath).ImportCompetitions(csvPath); break;
                     case "entries": result = new CompetitionImporter(dbPath).ImportEntries(csvPath); break;
+                    case "competition_links": result = new CompetitionLinkImporter(dbPath).Import(csvPath); break;
                     default:
                         Console.WriteLine($"⚠️ Tipo no soportado: '{importType}'");
                         return 1;
@@ -338,7 +338,7 @@ namespace UniFutsal.Cli
             }
         }
 
-        static int HandleAdvanceSeason(string[] args)
+                static int HandleAdvanceSeason(string[] args)
         {
             string dbPath = "saves/unifutsal_base.db";
             string competitionUid = "";
@@ -352,7 +352,6 @@ namespace UniFutsal.Cli
             if (string.IsNullOrEmpty(competitionUid))
             {
                 Console.WriteLine("❌ Error: debes especificar --competition <uid>");
-                Console.WriteLine("   Ejemplo: unifutsal advance-season --db saves/prueba.db --competition comp-lnfs-primera");
                 return 1;
             }
 
@@ -369,16 +368,49 @@ namespace UniFutsal.Cli
                 Console.WriteLine($"   ⚽ Partidos generados:     {result.MatchesGenerated}");
                 Console.WriteLine($"   📆 Nueva fecha del mundo:  {result.NewWorldDate}");
                 Console.WriteLine();
+
+                if (result.PromotedClubUids.Count > 0 || result.RelegatedClubUids.Count > 0)
+                {
+                    Console.WriteLine($"🔄 Ascensos y descensos:");
+                    if (result.PromotedClubUids.Count > 0)
+                        Console.WriteLine($"   📈 Ascienden a 1ª: {string.Join(", ", result.PromotedClubUids)}");
+                    if (result.RelegatedClubUids.Count > 0)
+                        Console.WriteLine($"   📉 Descienden a 2ª: {string.Join(", ", result.RelegatedClubUids)}");
+                    Console.WriteLine();
+                }
+
                 Console.WriteLine($"👥 Desarrollo de jugadores ({result.PlayersDeveloped} totales):");
                 Console.WriteLine($"   📈 Mejorados:  {result.PlayersImproved}");
                 Console.WriteLine($"   ➡️  Estables:   {result.PlayersStable}");
                 Console.WriteLine($"   📉 Declinados: {result.PlayersDeclined}");
                 Console.WriteLine();
+
                 Console.WriteLine($"👴 Retiradas y contratos:");
                 Console.WriteLine($"   🚪 Jugadores retirados:    {result.PlayersRetired}");
                 Console.WriteLine($"   📄 Contratos expirados:    {result.ContractsExpired}");
+                Console.WriteLine();
+
+                Console.WriteLine($"💼 Mercado de fichajes ({result.TransfersSigned} traspasos):");
+                if (result.TransfersSigned > 0)
+                {
+                    int shown = Math.Min(10, result.TransferDescriptions.Count);
+                    for (int i = 0; i < shown; i++)
+                    {
+                        Console.WriteLine($"   ⚽ {result.TransferDescriptions[i]}");
+                    }
+                    if (result.TransferDescriptions.Count > shown)
+                    {
+                        Console.WriteLine($"   ... y {result.TransferDescriptions.Count - shown} más");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"   (sin fichajes necesarios)");
+                }
+
                 Console.WriteLine($"\n💡 Para simular la nueva temporada:");
                 Console.WriteLine($"   unifutsal sim --db {dbPath} --competition {competitionUid} --season {result.NewSeasonLabel} --report");
+                Console.WriteLine($"   unifutsal sim --db {dbPath} --competition comp-lnfs-segunda --season {result.NewSeasonLabel} --report");
                 return 0;
             }
             catch (Exception ex)
@@ -387,6 +419,7 @@ namespace UniFutsal.Cli
                 return 1;
             }
         }
+        
 
         static void PrintReport(SeasonReport report)
         {

@@ -1,0 +1,3 @@
+from_competition_uid,to_competition_uid,link_type,slots,priority
+comp-lnfs-primera,comp-lnfs-segunda,descenso,2,1
+comp-lnfs-segunda,comp-lnfs-primera,ascenso,2,1

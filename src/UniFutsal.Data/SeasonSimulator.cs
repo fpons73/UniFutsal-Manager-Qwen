@@ -100,11 +100,17 @@ namespace UniFutsal.Data
                 throw new ArgumentException($"Temporada '{seasonLabel}' no encontrada.");
             }
 
-            // 3. Registrar clubes en la tabla de clasificación
+                        // 3. Registrar SOLO los clubes inscritos en esta competición
             var table = new LeagueTable();
-            foreach (var club in world.Clubs)
+            foreach (var entry in world.CompetitionEntries)
             {
-                table.RegisterClub(club.Id, club.Uid, club.Name);
+                if (entry.CompetitionId == competition.Id
+                    && entry.SeasonId == season.Id
+                    && entry.ClubId.HasValue
+                    && entry.Club != null)
+                {
+                    table.RegisterClub(entry.Club.Id, entry.Club.Uid, entry.Club.Name);
+                }
             }
 
             // 4. Obtener partidos de la competición/temporada ordenados por jornada

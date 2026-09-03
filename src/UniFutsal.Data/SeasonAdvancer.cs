@@ -20,13 +20,17 @@ namespace UniFutsal.Data
         public int PlayersStable { get; set; }
         public int PlayersRetired { get; set; }
         public int ContractsExpired { get; set; }
+        public List<string> PromotedClubUids { get; set; } = new List<string>();
+        public List<string> RelegatedClubUids { get; set; } = new List<string>();
+        public int TransfersSigned { get; set; }
+        public List<string> TransferDescriptions { get; set; } = new List<string>();
     }
 
     /// <summary>
     /// Avanza el mundo de una temporada a la siguiente.
-    /// Crea la nueva temporada, copia inscripciones, genera calendario,
-    /// desarrolla jugadores, procesa retiradas y expiraciones, y actualiza world_date.
-    /// Determinista: no usa Random ni DateTime.Now.
+    /// Crea la nueva temporada, copia inscripciones, procesa ascensos/descensos,
+    /// desarrolla jugadores, procesa retiradas, ejecuta el mercado de fichajes,
+    /// genera calendario y actualiza world_date.
     /// </summary>
     public sealed class SeasonAdvancer
     {
@@ -60,13 +64,18 @@ namespace UniFutsal.Data
                     $"No se encontró ninguna temporada con inscripciones para '{competitionUid}'.");
             }
 
-            // 3. Verificar que todos los partidos están jugados
-            int unplayedCount = GetUnplayedMatchCount(connection, competitionId, currentSeasonId);
-            if (unplayedCount > 0)
+            // 3. Verificar que todos los partidos están jugados en TODAS las competiciones
+            var allCompIds = GetAllActiveCompetitionIds(connection);
+            foreach (var compId in allCompIds)
             {
-                throw new InvalidOperationException(
-                    $"La temporada actual tiene {unplayedCount} partidos sin jugar. " +
-                    $"Simula la temporada antes de avanzar.");
+                int unplayed = GetUnplayedMatchCount(connection, compId, currentSeasonId);
+                if (unplayed > 0)
+                {
+                    string compUidLocal = GetCompetitionUid(connection, compId);
+                    throw new InvalidOperationException(
+                        $"La temporada actual de '{compUidLocal}' tiene {unplayed} partidos sin jugar. " +
+                        $"Simula todas las competiciones antes de avanzar.");
+                }
             }
 
             // 4. Obtener detalles de la temporada actual
@@ -90,10 +99,14 @@ namespace UniFutsal.Data
             // 6. Insertar nueva temporada
             long nextSeasonId = InsertSeason(connection, nextLabel, nextStartDate, nextEndDate);
 
-            // 7. Copiar inscripciones de clubes
-            int entriesCopied = CopyEntries(connection, currentSeasonId, nextSeasonId, competitionId);
+            // 7. COPIAR INSCRIPCIONES DE TODAS LAS COMPETICIONES
+            int entriesCopied = CopyEntriesForAllCompetitions(connection, currentSeasonId, nextSeasonId, allCompIds);
 
-            // 8. Desarrollo anual de jugadores (envejecimiento + mejora/declive)
+            // 8. Procesar ascensos/descensos (mueve clubes entre divisiones)
+            var promoReleg = new PromotionRelegationProcessor(_dbPath);
+            var promoResult = promoReleg.Process(nextLabel);
+
+            // 9. Desarrollo anual de jugadores
             var developer = new PlayerDeveloper(_dbPath);
             var devRecords = developer.DevelopAll(nextLabel);
             int improved = 0, declined = 0, stable = 0;
@@ -104,18 +117,28 @@ namespace UniFutsal.Data
                 else stable++;
             }
 
-            // 9. Retiradas de jugadores veteranos
+            // 10. Retiradas
             var retirer = new PlayerRetirer(_dbPath);
             var retiredIds = retirer.ProcessRetirements(nextLabel);
 
-            // 10. Expiración de contratos
+            // 11. Expiración de contratos
             int contractsExpired = retirer.ProcessContractExpirations(nextLabel);
 
-            // 11. Generar calendario (CalendarGenerator usa su propia conexión)
-            var generator = new CalendarGenerator(_dbPath);
-            int matchesGenerated = generator.Generate(competitionUid, nextLabel);
+            // 11b. Mercado de fichajes (los clubes reemplazan retirados y expirados)
+            var market = new TransferMarketProcessor(_dbPath);
+            var marketResult = market.Process(nextLabel);
 
-            // 12. Actualizar world_date
+            // 12. Generar calendario para TODAS las competiciones
+            int totalMatchesGenerated = 0;
+            var allCompetitionUids = GetAllCompetitionUids(connection);
+            foreach (var compUidLocal in allCompetitionUids)
+            {
+                var generator = new CalendarGenerator(_dbPath);
+                int matches = generator.Generate(compUidLocal, nextLabel);
+                totalMatchesGenerated += matches;
+            }
+
+            // 13. Actualizar world_date
             string newWorldDate = nextStartDate.ToString("yyyy-MM-dd");
             UpdateWorldDate(connection, newWorldDate);
 
@@ -124,14 +147,18 @@ namespace UniFutsal.Data
                 PreviousSeasonLabel = currentLabel,
                 NewSeasonLabel = nextLabel,
                 EntriesCopied = entriesCopied,
-                MatchesGenerated = matchesGenerated,
+                MatchesGenerated = totalMatchesGenerated,
                 NewWorldDate = newWorldDate,
                 PlayersDeveloped = devRecords.Count,
                 PlayersImproved = improved,
                 PlayersDeclined = declined,
                 PlayersStable = stable,
                 PlayersRetired = retiredIds.Count,
-                ContractsExpired = contractsExpired
+                ContractsExpired = contractsExpired,
+                PromotedClubUids = promoResult.PromotedClubUids,
+                RelegatedClubUids = promoResult.RelegatedClubUids,
+                TransfersSigned = marketResult.TotalTransfers,
+                TransferDescriptions = marketResult.TransfersDescription
             };
         }
 
@@ -145,6 +172,42 @@ namespace UniFutsal.Data
             var result = cmd.ExecuteScalar();
             if (result == null || result == DBNull.Value) return 0;
             return Convert.ToInt64(result);
+        }
+
+        private string GetCompetitionUid(SqliteConnection connection, long id)
+        {
+            using var cmd = new SqliteCommand(
+                "SELECT uid FROM competitions WHERE id = @id", connection);
+            cmd.Parameters.AddWithValue("@id", id);
+            var result = cmd.ExecuteScalar();
+            if (result == null || result == DBNull.Value) return "(unknown)";
+            return result.ToString() ?? "(unknown)";
+        }
+
+        private List<long> GetAllActiveCompetitionIds(SqliteConnection connection)
+        {
+            var ids = new List<long>();
+            using var cmd = new SqliteCommand(
+                "SELECT id FROM competitions WHERE active = 1", connection);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                ids.Add(reader.GetInt64(0));
+            }
+            return ids;
+        }
+
+        private List<string> GetAllCompetitionUids(SqliteConnection connection)
+        {
+            var uids = new List<string>();
+            using var cmd = new SqliteCommand(
+                "SELECT uid FROM competitions WHERE active = 1", connection);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                uids.Add(reader.GetString(0));
+            }
+            return uids;
         }
 
         private long GetLatestSeasonForCompetition(SqliteConnection connection, long competitionId)
@@ -246,17 +309,27 @@ namespace UniFutsal.Data
             return Convert.ToInt64(result);
         }
 
-        private int CopyEntries(SqliteConnection connection, long fromSeasonId, long toSeasonId, long competitionId)
+        /// <summary>
+        /// COPIA INSCRIPCIONES DE TODAS LAS COMPETICIONES (no solo la de entrada).
+        /// </summary>
+        private int CopyEntriesForAllCompetitions(SqliteConnection connection,
+            long fromSeasonId, long toSeasonId, List<long> competitionIds)
         {
-            using var cmd = new SqliteCommand(@"
-                INSERT INTO competition_entries (season_id, competition_id, club_id, national_team_id, group_id, seed, qualified_via_link_id, status)
-                SELECT @to_season, competition_id, club_id, national_team_id, group_id, seed, qualified_via_link_id, status
-                FROM competition_entries
-                WHERE season_id = @from_season AND competition_id = @comp_id", connection);
-            cmd.Parameters.AddWithValue("@to_season", toSeasonId);
-            cmd.Parameters.AddWithValue("@from_season", fromSeasonId);
-            cmd.Parameters.AddWithValue("@comp_id", competitionId);
-            return cmd.ExecuteNonQuery();
+            int total = 0;
+            foreach (var compId in competitionIds)
+            {
+                using var cmd = new SqliteCommand(@"
+                    INSERT INTO competition_entries
+                        (season_id, competition_id, club_id, national_team_id, group_id, seed, qualified_via_link_id, status)
+                    SELECT @to_season, competition_id, club_id, national_team_id, group_id, seed, qualified_via_link_id, status
+                    FROM competition_entries
+                    WHERE season_id = @from_season AND competition_id = @comp_id", connection);
+                cmd.Parameters.AddWithValue("@to_season", toSeasonId);
+                cmd.Parameters.AddWithValue("@from_season", fromSeasonId);
+                cmd.Parameters.AddWithValue("@comp_id", compId);
+                total += cmd.ExecuteNonQuery();
+            }
+            return total;
         }
 
         private void UpdateWorldDate(SqliteConnection connection, string newDate)
